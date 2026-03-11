@@ -64,10 +64,13 @@ export async function handleUpdateTaskFromHook(): Promise<void> {
       const filePath = hookData.tool_input?.file_path ?? hookData.tool_input?.path ?? '';
       const fileName = filePath ? filePath.split('/').pop() ?? filePath : '';
       const writer = new KeepGoingWriter(wsPath);
-      // Reuse branch from existing task data to avoid spawning git on every edit.
-      // Only fall back to git if no prior task exists yet.
+      // Reuse branch from OUR session to avoid spawning git on every edit.
+      // Only match by sessionId so we never inherit a stale branch from another session.
       const existing = writer.readCurrentTasks();
-      const cachedBranch = existing.find(t => t.sessionActive && t.worktreePath === wsPath)?.branch;
+      const sessionIdFromHook = hookData.session_id;
+      const cachedBranch = sessionIdFromHook
+        ? existing.find(t => t.sessionId === sessionIdFromHook)?.branch
+        : undefined;
       const branch = cachedBranch ?? getCurrentBranch(wsPath) ?? undefined;
 
       const task: Partial<CurrentTask> & { sessionActive: boolean; updatedAt: string } = {

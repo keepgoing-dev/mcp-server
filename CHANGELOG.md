@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.4
+
+- Add MIT LICENSE file for open-source compliance
+- Update README with improved setup instructions and MCP directory metadata
+- Add glama.json for MCP directory listing discovery
+- Add public repo sync workflow for community repository
+
 ## 0.5.2
 
 - Use smart summary and next-step generation in CLI `--save-checkpoint` handler

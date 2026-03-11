@@ -20,15 +20,15 @@ fi
 # Detect current git branch for branch-aware filtering
 CURRENT_BRANCH=$(git -C "$DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
-# Single jq call: prefer current branch tasks, fall back to most recent active
-RESULT=$(jq -r --arg branch "$CURRENT_BRANCH" '
+# Single jq call: filter stale sessions (>2h), show only current branch tasks
+RESULT=$(jq -r --arg branch "$CURRENT_BRANCH" --arg now "$(date -u +%s)" '
   (.tasks // [])
-  | map(select(.sessionActive == true))
-  | if length == 0 then empty
-    else
-      (map(select(.branch == $branch)) | sort_by(.updatedAt) | last) //
-      (sort_by(.updatedAt) | last)
-    end
+  | map(select(
+      .sessionActive == true
+      and (.updatedAt | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) > ($now | tonumber - 7200)
+    ))
+  | map(select(.branch == $branch))
+  | sort_by(.updatedAt) | last
   | [(.branch // ""), (.taskSummary // "")]
   | @tsv
 ' "$TASKS_FILE")
