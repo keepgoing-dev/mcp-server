@@ -8,13 +8,23 @@ KeepGoing auto-captures checkpoints (what you were doing, what's next, which fil
 
 ### Claude Code
 
+**Global (recommended)** — works across all your projects:
+
 ```bash
-claude mcp add keepgoing -- npx -y @keepgoingdev/mcp-server
+claude mcp add keepgoing --scope user -- npx -y @keepgoingdev/mcp-server
 ```
+
+**Per-project** — scoped to a single project:
+
+```bash
+claude mcp add keepgoing --scope project -- npx -y @keepgoingdev/mcp-server
+```
+
+Then ask Claude Code to run `setup_project` (with `scope: "user"` for global, or default for per-project) to add session hooks and CLAUDE.md instructions.
 
 ### Manual config
 
-Add to your MCP config (e.g., `~/.claude/claude_code_config.json`):
+Add to your MCP config (e.g., `~/.claude.json` for global, or `.mcp.json` for per-project):
 
 ```json
 {

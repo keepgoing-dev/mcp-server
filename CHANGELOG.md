@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.6
+
+- Add global scope option to `setup_project` tool for project-wide MCP configuration
+
 ## 0.5.5
 
 - Replace copied statusline shell script with auto-updating TypeScript statusline via npx
