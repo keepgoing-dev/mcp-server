@@ -1,0 +1,27 @@
+{
+  "name": "@keepgoingdev/mcp-server",
+  "version": "0.5.4",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "keepgoing-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "watch": "tsup --watch",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@keepgoingdev/shared": "*",
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
+  }
+}
