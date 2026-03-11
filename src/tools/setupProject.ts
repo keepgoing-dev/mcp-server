@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { z } from 'zod';
 import { getLicenseForFeature } from '@keepgoingdev/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { isLegacyStatusline, cleanupLegacyScript, STATUSLINE_CMD } from '../cli/migrate.js';
 
 const KEEPGOING_MARKER = '@keepgoingdev/mcp-server';
 
@@ -115,33 +115,23 @@ export function registerSetupProject(server: McpServer, workspacePath: string) {
 
       // --- Statusline ---
       if (process.env.KEEPGOING_PRO_BYPASS === '1' || getLicenseForFeature('session-awareness')) {
-        const statuslineSrc = path.resolve(
-          new URL('.', import.meta.url).pathname,
-          'statusline.sh',
-        );
-        const claudeHome = path.join(os.homedir(), '.claude');
-        const statuslineDest = path.join(claudeHome, 'keepgoing-statusline.sh');
+        const needsUpdate = settings.statusLine?.command
+          && isLegacyStatusline(settings.statusLine.command);
 
-        if (fs.existsSync(statuslineSrc)) {
-          if (!fs.existsSync(claudeHome)) {
-            fs.mkdirSync(claudeHome, { recursive: true });
-          }
-          fs.copyFileSync(statuslineSrc, statuslineDest);
-          fs.chmodSync(statuslineDest, 0o755);
-
-          if (!settings.statusLine) {
-            settings.statusLine = {
-              type: 'command',
-              command: statuslineDest,
-            };
-            settingsChanged = true;
-            results.push('**Statusline:** Installed `keepgoing-statusline.sh` and added to `.claude/settings.json`');
-          } else {
-            results.push('**Statusline:** `statusLine` already configured in settings, skipped');
-          }
+        if (!settings.statusLine || needsUpdate) {
+          settings.statusLine = {
+            type: 'command',
+            command: STATUSLINE_CMD,
+          };
+          settingsChanged = true;
+          results.push(needsUpdate
+            ? '**Statusline:** Migrated to auto-updating `npx` command'
+            : '**Statusline:** Added to `.claude/settings.json`');
         } else {
-          results.push('**Statusline:** Script not found in package, skipped');
+          results.push('**Statusline:** `statusLine` already configured in settings, skipped');
         }
+
+        cleanupLegacyScript();
       }
 
       // Write settings once if anything changed

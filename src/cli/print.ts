@@ -1,6 +1,7 @@
 import { formatRelativeTime, getLicenseForFeature } from '@keepgoingdev/shared';
 import { KeepGoingReader } from '../storage.js';
 import { resolveWsPath } from './util.js';
+import { migrateStatusline } from './migrate.js';
 
 export async function handlePrintMomentum(): Promise<void> {
   const wsPath = resolveWsPath();
@@ -34,6 +35,12 @@ export async function handlePrintMomentum(): Promise<void> {
     lines.push(`  Worked on ${touchedCount} files on ${lastSession.gitBranch ?? 'unknown branch'}`);
   }
   lines.push('  Tip: Use the get_reentry_briefing tool for a full briefing');
+
+  // Auto-migrate legacy statusline if needed
+  const migrationMsg = migrateStatusline(wsPath);
+  if (migrationMsg) {
+    lines.push(migrationMsg);
+  }
 
   console.log(lines.join('\n'));
   process.exit(0);

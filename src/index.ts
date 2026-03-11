@@ -19,6 +19,7 @@ import { registerProgressPrompt } from './prompts/progress.js';
 import { handlePrintMomentum, handlePrintCurrent } from './cli/print.js';
 import { handleSaveCheckpoint } from './cli/saveCheckpoint.js';
 import { handleUpdateTask, handleUpdateTaskFromHook } from './cli/updateTask.js';
+import { handleStatusline } from './cli/statusline.js';
 
 // CLI flag dispatch table. Each handler calls process.exit() when done.
 const CLI_HANDLERS: Record<string, () => Promise<void>> = {
@@ -27,6 +28,7 @@ const CLI_HANDLERS: Record<string, () => Promise<void>> = {
   '--update-task': handleUpdateTask,
   '--update-task-from-hook': handleUpdateTaskFromHook,
   '--print-current': handlePrintCurrent,
+  '--statusline': handleStatusline,
 };
 
 const flag = process.argv.slice(2).find(a => a in CLI_HANDLERS);

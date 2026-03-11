@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5
+
+- Replace copied statusline shell script with auto-updating TypeScript statusline via npx
+- Extract shared statusline migration logic into dedicated `cli/migrate.ts` module
+- Tighten legacy statusline detection and remove tsup copy step
+
 ## 0.5.4
 
 - Add MIT LICENSE file for open-source compliance
