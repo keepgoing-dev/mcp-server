@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.7
+
+- Extract setup logic and KeepGoingReader to shared package for cross-app reuse (d78b203, ec65abe)
+
 ## 0.5.6
 
 - Add global scope option to `setup_project` tool for project-wide MCP configuration
