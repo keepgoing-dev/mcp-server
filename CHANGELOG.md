@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+- Add `continue_on` tool to export your development context as a formatted prompt for any AI tool
+- Add token-aware briefing tiers with `tier` and `model` params on `get_momentum` and `get_reentry_briefing`
+
 ## 0.5.7
 
 - Extract setup logic and KeepGoingReader to shared package for cross-app reuse (d78b203, ec65abe)
