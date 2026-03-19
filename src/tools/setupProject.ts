@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { setupProject, getLicenseForFeature } from '@keepgoingdev/shared';
+import { setupProject } from '@keepgoingdev/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { isLegacyStatusline, cleanupLegacyScript } from '../cli/migrate.js';
 
@@ -13,14 +13,11 @@ export function registerSetupProject(server: McpServer, workspacePath: string) {
       scope: z.enum(['project', 'user']).optional().default('project').describe('Where to write config: "user" for global (~/.claude/), "project" for per-project (.claude/)'),
     },
     async ({ sessionHooks, claudeMd, scope }) => {
-      const hasProLicense = process.env.KEEPGOING_PRO_BYPASS === '1' || !!getLicenseForFeature('session-awareness');
-
       const result = setupProject({
         workspacePath,
         scope,
         sessionHooks,
         claudeMd,
-        hasProLicense,
         statusline: {
           isLegacy: isLegacyStatusline,
           cleanup: cleanupLegacyScript,

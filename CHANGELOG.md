@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1
+
+- Expand statusline label budget to 55 chars when no action verb is shown, filling the available slack
+- Show "done" state in the statusline when the AI finishes its turn, instead of falling back to the last tool verb
+- Cache session label on first hook fire and store it in `current-tasks.json` so it is never overwritten
+- Ungate statusline setup from Pro: all per-project `setup_project` calls now install the statusline config
+
 ## 0.6.0
 
 - Add `continue_on` tool to export your development context as a formatted prompt for any AI tool

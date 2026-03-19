@@ -1,5 +1,6 @@
-import { getCurrentBranch, pruneStaleTasks, findGitRoot } from '@keepgoingdev/shared';
+import { pruneStaleTasks, findGitRoot } from '@keepgoingdev/shared';
 import type { CurrentTasks } from '@keepgoingdev/shared';
+import { extractSessionLabel, extractCurrentAction, truncateAtWord } from './transcriptUtils.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -14,44 +15,64 @@ export async function handleStatusline(): Promise<void> {
     clearTimeout(timeout);
     try {
       const raw = Buffer.concat(chunks).toString('utf-8').trim();
-      if (!raw) {
-        process.exit(0);
-      }
-      const input = JSON.parse(raw) as { workspace?: { current_dir?: string }; cwd?: string };
+      if (!raw) process.exit(0);
+
+      const input = JSON.parse(raw) as {
+        session_id?: string;
+        transcript_path?: string;
+        agent?: { name?: string };
+        workspace?: { current_dir?: string };
+        cwd?: string;
+      };
+
       const dir = input.workspace?.current_dir ?? input.cwd;
-      if (!dir) {
-        process.exit(0);
+      if (!dir) process.exit(0);
+
+      const transcriptPath = input.transcript_path;
+      const sessionId = input.session_id;
+
+      // Resolve label: agent.name > cached sessionLabel > transcript > null
+      let label: string | null = null;
+
+      if (input.agent?.name) {
+        label = input.agent.name;
       }
 
-      const gitRoot = findGitRoot(dir);
-      const tasksFile = path.join(gitRoot, '.keepgoing', 'current-tasks.json');
-      if (!fs.existsSync(tasksFile)) {
-        process.exit(0);
+      if (!label) {
+        // Try to find cached sessionLabel in current-tasks.json
+        try {
+          const gitRoot = findGitRoot(dir);
+          const tasksFile = path.join(gitRoot, '.keepgoing', 'current-tasks.json');
+          if (fs.existsSync(tasksFile)) {
+            const data = JSON.parse(fs.readFileSync(tasksFile, 'utf-8')) as CurrentTasks;
+            const tasks = pruneStaleTasks(data.tasks ?? []);
+            const match = sessionId ? tasks.find(t => t.sessionId === sessionId) : undefined;
+            if (match?.sessionLabel) {
+              label = match.sessionLabel;
+            }
+          }
+        } catch {
+          // Ignore; fall through to transcript
+        }
       }
 
-      const data = JSON.parse(fs.readFileSync(tasksFile, 'utf-8')) as CurrentTasks;
-      const branch = getCurrentBranch(gitRoot) ?? '';
-
-      // Prune stale sessions (>2h) and filter to current branch
-      const active = pruneStaleTasks(data.tasks ?? [])
-        .filter(t => t.sessionActive && t.branch === branch);
-
-      if (active.length === 0) {
-        process.exit(0);
+      if (!label && transcriptPath) {
+        label = extractSessionLabel(transcriptPath);
       }
 
-      // Pick the most recently updated task
-      active.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
-      const task = active[active.length - 1];
-      const summary = task.taskSummary;
-      if (!summary) {
-        process.exit(0);
-      }
+      if (!label) process.exit(0);
 
-      if (branch) {
-        process.stdout.write(`[KG] ${branch}: ${summary}\n`);
+      // Get current action from transcript
+      const action = transcriptPath ? extractCurrentAction(transcriptPath) : null;
+
+      // Dynamic budget: 40 chars with action verb, 55 chars without
+      const budget = action ? 40 : 55;
+      const displayLabel = truncateAtWord(label, budget);
+
+      if (action) {
+        process.stdout.write(`[KG] ${displayLabel} \u00b7 ${action}\n`);
       } else {
-        process.stdout.write(`[KG] ${summary}\n`);
+        process.stdout.write(`[KG] ${displayLabel}\n`);
       }
     } catch {
       // Exit silently on errors

@@ -5,6 +5,7 @@ import {
   type CurrentTask,
 } from '@keepgoingdev/shared';
 import { resolveWsPath } from './util.js';
+import { extractSessionLabel } from './transcriptUtils.js';
 
 export async function handleUpdateTask(): Promise<void> {
   const args = process.argv.slice(2);
@@ -59,6 +60,7 @@ export async function handleUpdateTaskFromHook(): Promise<void> {
         tool_name?: string;
         tool_input?: { file_path?: string; path?: string };
         session_id?: string;
+        transcript_path?: string;
       };
       const toolName = hookData.tool_name ?? 'Edit';
       const filePath = hookData.tool_input?.file_path ?? hookData.tool_input?.path ?? '';
@@ -68,9 +70,10 @@ export async function handleUpdateTaskFromHook(): Promise<void> {
       // Only match by sessionId so we never inherit a stale branch from another session.
       const existing = writer.readCurrentTasks();
       const sessionIdFromHook = hookData.session_id;
-      const cachedBranch = sessionIdFromHook
-        ? existing.find(t => t.sessionId === sessionIdFromHook)?.branch
+      const existingSession = sessionIdFromHook
+        ? existing.find(t => t.sessionId === sessionIdFromHook)
         : undefined;
+      const cachedBranch = existingSession?.branch;
       const branch = cachedBranch ?? getCurrentBranch(wsPath) ?? undefined;
 
       const task: Partial<CurrentTask> & { sessionActive: boolean; updatedAt: string } = {
@@ -85,6 +88,13 @@ export async function handleUpdateTaskFromHook(): Promise<void> {
       // Derive session ID from context
       const sessionId = hookData.session_id || generateSessionId({ ...task, workspaceRoot: wsPath });
       task.sessionId = sessionId;
+
+      // Cache sessionLabel on first hook fire; never overwrite once set
+      if (!existingSession?.sessionLabel && hookData.transcript_path) {
+        const label = extractSessionLabel(hookData.transcript_path);
+        if (label) task.sessionLabel = label;
+      }
+
       writer.upsertSession(task);
     } catch {
       // Exit silently on errors
