@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+
+- Add always-on decision detection via global git post-commit hook
+- Delegate project setup logic to shared package for cross-app reuse
+- Add SessionEnd hook support for lifecycle management
+- Reposition Session Awareness as bird's eye view and fix sessionLabel display
+
 ## 0.6.1
 
 - Expand statusline label budget to 55 chars when no action verb is shown, filling the available slack

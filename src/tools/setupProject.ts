@@ -9,15 +9,17 @@ export function registerSetupProject(server: McpServer, workspacePath: string) {
     'Set up KeepGoing hooks and instructions. Use scope "user" for global setup (all projects) or "project" for per-project setup.',
     {
       sessionHooks: z.boolean().optional().default(true).describe('Add session hooks to settings.json'),
-      claudeMd: z.boolean().optional().default(true).describe('Add KeepGoing instructions to CLAUDE.md'),
+      claudeMd: z.boolean().optional().default(true).describe('Add KeepGoing instructions to .claude/rules/keepgoing.md'),
       scope: z.enum(['project', 'user']).optional().default('project').describe('Where to write config: "user" for global (~/.claude/), "project" for per-project (.claude/)'),
+      claudeDir: z.string().optional().describe('Override the Claude config directory for user scope (defaults to CLAUDE_CONFIG_DIR env var or ~/.claude)'),
     },
-    async ({ sessionHooks, claudeMd, scope }) => {
+    async ({ sessionHooks, claudeMd, scope, claudeDir }) => {
       const result = setupProject({
         workspacePath,
         scope,
         sessionHooks,
         claudeMd,
+        claudeDir,
         statusline: {
           isLegacy: isLegacyStatusline,
           cleanup: cleanupLegacyScript,

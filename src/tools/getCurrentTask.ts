@@ -5,7 +5,7 @@ import { formatRelativeTime, getLicenseForFeature } from '@keepgoingdev/shared';
 export function registerGetCurrentTask(server: McpServer, reader: KeepGoingReader) {
   server.tool(
     'get_current_task',
-    'Get current live session tasks. Shows all active AI agent sessions, what each is doing, last files edited, and next steps. Supports multiple concurrent sessions.',
+    "Get a bird's eye view of all active Claude sessions. See what each session is working on, which branch it is on, and when it last did something. Useful when running multiple parallel sessions across worktrees.",
     {},
     async () => {
       if (!reader.exists()) {
@@ -63,13 +63,16 @@ export function registerGetCurrentTask(server: McpServer, reader: KeepGoingReade
       for (const task of [...activeTasks, ...finishedTasks]) {
         const statusIcon = task.sessionActive ? '🟢' : '✅';
         const statusLabel = task.sessionActive ? 'Active' : 'Finished';
-        const sessionLabel = task.agentLabel || task.sessionId || 'Session';
+        const sessionLabel = task.sessionLabel || task.agentLabel || task.sessionId || 'Session';
 
         lines.push(`### ${statusIcon} ${sessionLabel} (${statusLabel})`);
         lines.push(`- **Updated:** ${formatRelativeTime(task.updatedAt)}`);
 
         if (task.branch) {
           lines.push(`- **Branch:** ${task.branch}`);
+        }
+        if (task.agentLabel && task.sessionLabel) {
+          lines.push(`- **Agent:** ${task.agentLabel}`);
         }
         if (task.taskSummary) {
           lines.push(`- **Doing:** ${task.taskSummary}`);

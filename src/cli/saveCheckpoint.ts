@@ -6,7 +6,7 @@ import {
   getTouchedFiles,
   getCommitsSince,
   getCommitMessagesSince,
-  getHeadCommitHash,
+  getFilesChangedInCommit,
   tryDetectDecision,
   getLicenseForFeature,
   generateSessionId,
@@ -84,16 +84,20 @@ export async function handleSaveCheckpoint(): Promise<void> {
   });
 
   // Decision detection (Pro feature, requires valid Decision Detection license)
-  if ((process.env.KEEPGOING_PRO_BYPASS === '1' || getLicenseForFeature('decisions')) && commitMessages.length > 0) {
-    const headHash = getHeadCommitHash(wsPath) || commitHashes[0];
-    if (headHash) {
+  // Loop all commits between checkpoints so none are missed
+  if (process.env.KEEPGOING_PRO_BYPASS === '1' || getLicenseForFeature('decisions')) {
+    for (let i = 0; i < commitHashes.length; i++) {
+      const hash = commitHashes[i];
+      const message = commitMessages[i];
+      if (!hash || !message) continue;
+      const files = getFilesChangedInCommit(wsPath, hash);
       const detected = tryDetectDecision({
         workspacePath: wsPath,
         checkpointId: checkpoint.id,
         gitBranch,
-        commitHash: headHash,
-        commitMessage: commitMessages[0],
-        filesChanged: touchedFiles,
+        commitHash: hash,
+        commitMessage: message,
+        filesChanged: files,
       });
       if (detected) {
         console.log(`[KeepGoing] Decision detected: ${detected.category} (${(detected.confidence * 100).toFixed(0)}% confidence)`);

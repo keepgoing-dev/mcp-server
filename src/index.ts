@@ -22,6 +22,7 @@ import { handleSaveCheckpoint } from './cli/saveCheckpoint.js';
 import { handleUpdateTask, handleUpdateTaskFromHook } from './cli/updateTask.js';
 import { handleStatusline } from './cli/statusline.js';
 import { handleContinueOn } from './cli/continueOn.js';
+import { handleDetectDecisions } from './cli/detectDecisions.js';
 
 // CLI flag dispatch table. Each handler calls process.exit() when done.
 const CLI_HANDLERS: Record<string, () => Promise<void>> = {
@@ -32,6 +33,7 @@ const CLI_HANDLERS: Record<string, () => Promise<void>> = {
   '--print-current': handlePrintCurrent,
   '--statusline': handleStatusline,
   '--continue-on': handleContinueOn,
+  '--detect-decisions': handleDetectDecisions,
 };
 
 const flag = process.argv.slice(2).find(a => a in CLI_HANDLERS);
