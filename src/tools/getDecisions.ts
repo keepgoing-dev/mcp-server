@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { KeepGoingReader } from '../storage.js';
-import { formatRelativeTime, getLicenseForFeature } from '@keepgoingdev/shared';
+import { formatRelativeTime, getLicenseForFeatureWithRevalidation } from '@keepgoingdev/shared';
 
 export function registerGetDecisions(server: McpServer, reader: KeepGoingReader) {
   server.tool(
@@ -23,7 +23,7 @@ export function registerGetDecisions(server: McpServer, reader: KeepGoingReader)
         };
       }
 
-      if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !getLicenseForFeature('decisions')) {
+      if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !(await getLicenseForFeatureWithRevalidation('decisions'))) {
         return {
           content: [
             {

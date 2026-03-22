@@ -1,4 +1,4 @@
-import { formatRelativeTime, getLicenseForFeature } from '@keepgoingdev/shared';
+import { formatRelativeTime, getLicenseForFeatureWithRevalidation } from '@keepgoingdev/shared';
 import { KeepGoingReader } from '../storage.js';
 import { resolveWsPath } from './util.js';
 import { migrateStatusline } from './migrate.js';
@@ -47,7 +47,7 @@ export async function handlePrintMomentum(): Promise<void> {
 }
 
 export async function handlePrintCurrent(): Promise<void> {
-  if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !getLicenseForFeature('session-awareness')) {
+  if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !(await getLicenseForFeatureWithRevalidation('session-awareness'))) {
     process.exit(0);
   }
 

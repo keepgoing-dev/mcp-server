@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1
+
+- Add 24-hour license revalidation for Pro feature gates (decisions, session awareness)
+- Distinguish network errors from API rejections for offline tolerance during revalidation
+
 ## 0.7.0
 
 - Add always-on decision detection via global git post-commit hook

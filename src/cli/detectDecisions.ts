@@ -4,7 +4,7 @@ import {
   getCommitMessageByHash,
   getFilesChangedInCommit,
   tryDetectDecision,
-  getLicenseForFeature,
+  getLicenseForFeatureWithRevalidation,
 } from '@keepgoingdev/shared';
 import { KeepGoingReader } from '../storage.js';
 import { resolveWsPath } from './util.js';
@@ -18,7 +18,7 @@ export async function handleDetectDecisions(): Promise<void> {
   const wsPath = resolveWsPath();
 
   // Respect Pro gate
-  if (!(process.env.KEEPGOING_PRO_BYPASS === '1' || getLicenseForFeature('decisions'))) {
+  if (!(process.env.KEEPGOING_PRO_BYPASS === '1' || (await getLicenseForFeatureWithRevalidation('decisions')))) {
     process.exit(0);
   }
 

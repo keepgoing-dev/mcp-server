@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { KeepGoingReader } from '../storage.js';
-import { formatRelativeTime, getLicenseForFeature } from '@keepgoingdev/shared';
+import { formatRelativeTime, getLicenseForFeatureWithRevalidation } from '@keepgoingdev/shared';
 
 export function registerGetCurrentTask(server: McpServer, reader: KeepGoingReader) {
   server.tool(
@@ -19,7 +19,7 @@ export function registerGetCurrentTask(server: McpServer, reader: KeepGoingReade
         };
       }
 
-      if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !getLicenseForFeature('session-awareness')) {
+      if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !(await getLicenseForFeatureWithRevalidation('session-awareness'))) {
         return {
           content: [
             {

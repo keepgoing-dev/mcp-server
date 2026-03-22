@@ -8,7 +8,7 @@ import {
   getCommitMessagesSince,
   getFilesChangedInCommit,
   tryDetectDecision,
-  getLicenseForFeature,
+  getLicenseForFeatureWithRevalidation,
   generateSessionId,
   buildSessionEvents,
   buildSmartSummary,
@@ -85,7 +85,7 @@ export async function handleSaveCheckpoint(): Promise<void> {
 
   // Decision detection (Pro feature, requires valid Decision Detection license)
   // Loop all commits between checkpoints so none are missed
-  if (process.env.KEEPGOING_PRO_BYPASS === '1' || getLicenseForFeature('decisions')) {
+  if (process.env.KEEPGOING_PRO_BYPASS === '1' || (await getLicenseForFeatureWithRevalidation('decisions'))) {
     for (let i = 0; i < commitHashes.length; i++) {
       const hash = commitHashes[i];
       const message = commitMessages[i];
