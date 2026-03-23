@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.2
+
+- Update statusline label dynamically from the latest user message instead of only the first prompt
+- Show last meaningful checkpoint as fallback when no active session is running
+- Suppress git stderr output in non-git directories to avoid spurious error messages
+- Add session start welcome behavior to setup rules
+
 ## 0.7.1
 
 - Add 24-hour license revalidation for Pro feature gates (decisions, session awareness)

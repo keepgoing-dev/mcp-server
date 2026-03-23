@@ -1,6 +1,7 @@
-import { pruneStaleTasks, findGitRoot } from '@keepgoingdev/shared';
+import { pruneStaleTasks, findGitRoot, formatRelativeTime } from '@keepgoingdev/shared';
 import type { CurrentTasks } from '@keepgoingdev/shared';
-import { extractSessionLabel, extractCurrentAction, truncateAtWord } from './transcriptUtils.js';
+import { KeepGoingReader } from '../storage.js';
+import { extractSessionLabel, extractLatestUserLabel, extractCurrentAction, truncateAtWord } from './transcriptUtils.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -31,11 +32,17 @@ export async function handleStatusline(): Promise<void> {
       const transcriptPath = input.transcript_path;
       const sessionId = input.session_id;
 
-      // Resolve label: agent.name > cached sessionLabel > transcript > null
+      // Resolve label: agent.name > latest user message > cached sessionLabel > first user message > null
       let label: string | null = null;
 
       if (input.agent?.name) {
         label = input.agent.name;
+      }
+
+      // For active sessions, prefer the latest user message so the label
+      // reflects the current topic, not just the initial prompt.
+      if (!label && transcriptPath) {
+        label = extractLatestUserLabel(transcriptPath);
       }
 
       if (!label) {
@@ -60,7 +67,31 @@ export async function handleStatusline(): Promise<void> {
         label = extractSessionLabel(transcriptPath);
       }
 
-      if (!label) process.exit(0);
+      if (!label) {
+        // No active session: show last meaningful checkpoint as fallback.
+        // Prefer manual checkpoints over auto-saved ones (auto-saves from session end
+        // always show "just now" which isn't useful).
+        try {
+          const gitRoot = findGitRoot(dir);
+          const reader = new KeepGoingReader(gitRoot);
+          if (reader.exists()) {
+            const recent = reader.getScopedRecentSessions(10);
+            const last = recent.find(s => s.source !== 'auto') ?? recent[0];
+            if (last) {
+              const ago = formatRelativeTime(last.timestamp);
+              const summary = last.summary ? truncateAtWord(last.summary, 40) : null;
+              const next = last.nextStep ? truncateAtWord(last.nextStep, 30) : null;
+              const parts = [`[KG] ${ago}`];
+              if (summary) parts.push(summary);
+              if (next) parts.push(`\u2192 ${next}`);
+              process.stdout.write(`${parts.join(' \u00b7 ')}\n`);
+            }
+          }
+        } catch {
+          // Ignore
+        }
+        process.exit(0);
+      }
 
       // Get current action from transcript
       const action = transcriptPath ? extractCurrentAction(transcriptPath) : null;

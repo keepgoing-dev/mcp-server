@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
-const TAIL_READ_BYTES = 8_192;
+const TAIL_READ_BYTES = 32_768;
+const LATEST_LABEL_READ_BYTES = 65_536;
 
 const TOOL_VERB_MAP: Record<string, string> = {
   Edit: 'editing',
@@ -14,6 +15,11 @@ const TOOL_VERB_MAP: Record<string, string> = {
   WebFetch: 'browsing',
   WebSearch: 'browsing',
   TodoWrite: 'planning',
+  AskUserQuestion: 'discussing',
+  EnterPlanMode: 'planning',
+  ExitPlanMode: 'planning',
+  TaskCreate: 'planning',
+  TaskUpdate: 'planning',
 };
 
 /**
@@ -116,6 +122,74 @@ export function extractSessionLabel(transcriptPath: string): string | null {
       if (text.length < 20) continue;
 
       // Cap at 80 chars to bound reads; caller applies display budget
+      if (text.length > 80) {
+        text = text.slice(0, 80);
+      }
+
+      return text;
+    }
+  } catch {
+    // Ignore errors
+  }
+  return null;
+}
+
+/**
+ * Extracts the latest substantive user message from the transcript (tail-read, scan backwards).
+ * Returns null if no suitable message is found within the read window.
+ */
+export function extractLatestUserLabel(transcriptPath: string): string | null {
+  if (!transcriptPath || !fs.existsSync(transcriptPath)) return null;
+
+  try {
+    const stat = fs.statSync(transcriptPath);
+    const fileSize = stat.size;
+    if (fileSize === 0) return null;
+
+    const readSize = Math.min(fileSize, LATEST_LABEL_READ_BYTES);
+    const offset = fileSize - readSize;
+
+    const buf = Buffer.alloc(readSize);
+    const fd = fs.openSync(transcriptPath, 'r');
+    try {
+      fs.readSync(fd, buf, 0, readSize, offset);
+    } finally {
+      fs.closeSync(fd);
+    }
+
+    const tail = buf.toString('utf-8');
+    const lines = tail.split('\n').reverse();
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      let entry: TranscriptEntry;
+      try {
+        entry = JSON.parse(trimmed) as TranscriptEntry;
+      } catch {
+        continue;
+      }
+
+      if (!isUserEntry(entry)) continue;
+
+      let text = extractTextFromContent(entry.message?.content);
+      if (!text) continue;
+
+      // Skip system-injected messages
+      if (text.startsWith('[') || /^<[a-z][\w-]*>/.test(text)) continue;
+
+      // Strip @-file mentions
+      text = text.replace(/@[\w./\-]+/g, '').trim();
+      // Strip filler prefixes
+      text = text.replace(FILLER_PREFIX_RE, '').trim();
+      // Strip markdown heading markers
+      text = text.replace(MARKDOWN_HEADING_RE, '').trim();
+      // Collapse whitespace/newlines to single space
+      text = text.replace(/\s+/g, ' ').trim();
+
+      if (text.length < 20) continue;
+
       if (text.length > 80) {
         text = text.slice(0, 80);
       }
