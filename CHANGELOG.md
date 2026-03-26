@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- Add ContextSnapshot tools for surfacing momentum data to MCP clients
+- Strip agent framework XML tags from session labels and task summaries
+- Add unit tests for storage, transcript utilities, and CLI handlers
+
 ## 0.7.2
 
 - Update statusline label dynamically from the latest user message instead of only the first prompt

@@ -2,6 +2,7 @@ import {
   KeepGoingWriter,
   getCurrentBranch,
   generateSessionId,
+  stripAgentTags,
   type CurrentTask,
 } from '@keepgoingdev/shared';
 import { resolveWsPath } from './util.js';
@@ -19,6 +20,9 @@ export async function handleUpdateTask(): Promise<void> {
   if (payloadStr) {
     try {
       const payload = JSON.parse(payloadStr) as Partial<CurrentTask>;
+      // Defense-in-depth: strip agent XML tags from user-facing fields
+      if (payload.taskSummary) payload.taskSummary = stripAgentTags(payload.taskSummary);
+      if (payload.sessionLabel) payload.sessionLabel = stripAgentTags(payload.sessionLabel);
       const writer = new KeepGoingWriter(wsPath);
       const branch = payload.branch ?? getCurrentBranch(wsPath) ?? undefined;
       const task: Partial<CurrentTask> & { sessionActive: boolean; updatedAt: string } = {

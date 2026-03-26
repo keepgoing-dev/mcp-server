@@ -14,6 +14,8 @@ import { registerSetupProject } from './tools/setupProject.js';
 import { registerActivateLicense } from './tools/activateLicense.js';
 import { registerDeactivateLicense } from './tools/deactivateLicense.js';
 import { registerContinueOn } from './tools/continueOn.js';
+import { registerGetContextSnapshot } from './tools/getContextSnapshot.js';
+import { registerGetWhatsHot } from './tools/getWhatsHot.js';
 import { registerResumePrompt } from './prompts/resume.js';
 import { registerDecisionsPrompt } from './prompts/decisions.js';
 import { registerProgressPrompt } from './prompts/progress.js';
@@ -59,6 +61,8 @@ if (flag) {
   registerGetCurrentTask(server, reader);
   registerSaveCheckpoint(server, reader, workspacePath);
   registerContinueOn(server, reader, workspacePath);
+  registerGetContextSnapshot(server, reader, workspacePath);
+  registerGetWhatsHot(server);
   registerSetupProject(server, workspacePath);
   registerActivateLicense(server);
   registerDeactivateLicense(server);

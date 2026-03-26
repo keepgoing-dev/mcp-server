@@ -13,6 +13,7 @@ import {
   tryDetectDecision,
   resolveStorageRoot,
   generateSessionId,
+  stripAgentTags,
 } from '@keepgoingdev/shared';
 
 export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReader, workspacePath: string) {
@@ -25,6 +26,10 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
       blocker: z.string().optional().describe('Any blocker preventing progress'),
     },
     async ({ summary, nextStep, blocker }) => {
+      summary = stripAgentTags(summary);
+      nextStep = nextStep ? stripAgentTags(nextStep) : nextStep;
+      blocker = blocker ? stripAgentTags(blocker) : blocker;
+
       const lastSession = reader.getLastSession();
 
       const gitBranch = getCurrentBranch(workspacePath);

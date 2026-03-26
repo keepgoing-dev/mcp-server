@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { stripAgentTags } from '@keepgoingdev/shared';
 
 const TAIL_READ_BYTES = 32_768;
 const LATEST_LABEL_READ_BYTES = 65_536;
@@ -107,8 +108,12 @@ export function extractSessionLabel(transcriptPath: string): string | null {
       let text = extractTextFromContent(entry.message?.content);
       if (!text) continue;
 
-      // Skip system-injected messages (bracket-prefixed or XML-tag-prefixed)
-      if (text.startsWith('[') || /^<[a-z][\w-]*>/.test(text)) continue;
+      // Skip system-injected messages (bracket-prefixed or starting with an XML tag)
+      if (text.startsWith('[') || /^<[a-z][\w-]*[\s>]/.test(text)) continue;
+
+      // Strip any residual agent framework tags
+      text = stripAgentTags(text);
+      if (!text) continue;
 
       // Strip @-file mentions
       text = text.replace(/@[\w./\-]+/g, '').trim();
@@ -176,8 +181,12 @@ export function extractLatestUserLabel(transcriptPath: string): string | null {
       let text = extractTextFromContent(entry.message?.content);
       if (!text) continue;
 
-      // Skip system-injected messages
-      if (text.startsWith('[') || /^<[a-z][\w-]*>/.test(text)) continue;
+      // Skip system-injected messages (bracket-prefixed or starting with an XML tag)
+      if (text.startsWith('[') || /^<[a-z][\w-]*[\s>]/.test(text)) continue;
+
+      // Strip any residual agent framework tags
+      text = stripAgentTags(text);
+      if (!text) continue;
 
       // Strip @-file mentions
       text = text.replace(/@[\w./\-]+/g, '').trim();
