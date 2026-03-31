@@ -61,8 +61,11 @@ export function registerGetCurrentTask(server: McpServer, reader: KeepGoingReade
 
       // Render each task
       for (const task of [...activeTasks, ...finishedTasks]) {
+        const phaseLabel = task.sessionPhase === 'planning' ? 'Planning' : undefined;
         const statusIcon = task.sessionActive ? '🟢' : '✅';
-        const statusLabel = task.sessionActive ? 'Active' : 'Finished';
+        const statusLabel = task.sessionActive
+          ? (phaseLabel || 'Active')
+          : 'Finished';
         const sessionLabel = task.sessionLabel || task.agentLabel || task.sessionId || 'Session';
 
         lines.push(`### ${statusIcon} ${sessionLabel} (${statusLabel})`);

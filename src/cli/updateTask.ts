@@ -87,6 +87,7 @@ export async function handleUpdateTaskFromHook(): Promise<void> {
         worktreePath: wsPath,
         sessionActive: true,
         updatedAt: new Date().toISOString(),
+        sessionPhase: 'active',
       };
 
       // Derive session ID from context

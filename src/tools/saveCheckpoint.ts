@@ -37,7 +37,14 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
       const commitHashes = getCommitsSince(workspacePath, lastSession?.timestamp);
       const projectName = path.basename(resolveStorageRoot(workspacePath));
 
+      const writer = new KeepGoingWriter(workspacePath);
       const sessionId = generateSessionId({ workspaceRoot: workspacePath, branch: gitBranch ?? undefined, worktreePath: workspacePath });
+
+      // Look up existing session to determine phase
+      const existingTasks = writer.readCurrentTasks();
+      const existingSession = existingTasks.find(t => t.sessionId === sessionId);
+      const sessionPhase = existingSession?.sessionPhase;
+
       const checkpoint = createCheckpoint({
         summary,
         nextStep: nextStep || '',
@@ -48,10 +55,21 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
         workspaceRoot: workspacePath,
         source: 'manual',
         sessionId,
+        ...(sessionPhase ? { sessionPhase } : {}),
+        ...(sessionPhase === 'planning' ? { tags: ['plan'] } : {}),
       });
 
-      const writer = new KeepGoingWriter(workspacePath);
       writer.saveCheckpoint(checkpoint, projectName);
+
+      // Upsert current task to keep session tracking in sync
+      writer.upsertSession({
+        sessionId,
+        sessionActive: true,
+        branch: gitBranch ?? undefined,
+        updatedAt: checkpoint.timestamp,
+        taskSummary: summary,
+        nextStep: nextStep || undefined,
+      });
 
       const lines: string[] = [
         `Checkpoint saved.`,

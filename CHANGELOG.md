@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0
+
+- Add plan mode checkpoint support for structured planning sessions
+- Evolve color palette to warm coral tones with Space Grotesk typography
+- Unify design tokens for consistent theme across surfaces
+
 ## 0.8.0
 
 - Add ContextSnapshot tools for surfacing momentum data to MCP clients

@@ -21,6 +21,7 @@ import { resolveWsPath } from './util.js';
 export async function handleSaveCheckpoint(): Promise<void> {
   const wsPath = resolveWsPath();
   const reader = new KeepGoingReader(wsPath);
+  const writer = new KeepGoingWriter(wsPath);
 
   const { session: lastSession } = reader.getScopedLastSession();
 
@@ -35,12 +36,53 @@ export async function handleSaveCheckpoint(): Promise<void> {
   const touchedFiles = getTouchedFiles(wsPath);
   const commitHashes = getCommitsSince(wsPath, lastSession?.timestamp);
 
-  // Skip if there's nothing to capture
-  if (touchedFiles.length === 0 && commitHashes.length === 0) {
+  const gitBranch = getCurrentBranch(wsPath);
+
+  // Look up session phase from current tasks
+  const sessionId = generateSessionId({ workspaceRoot: wsPath, branch: gitBranch ?? undefined, worktreePath: wsPath });
+  const existingTasks = writer.readCurrentTasks();
+  const existingSession = existingTasks.find(t => t.sessionId === sessionId);
+  const isPlanning = existingSession?.sessionPhase === 'planning';
+
+  // Skip only if there's nothing to capture AND we're not in a planning session
+  if (touchedFiles.length === 0 && commitHashes.length === 0 && !isPlanning) {
     process.exit(0);
   }
 
-  const gitBranch = getCurrentBranch(wsPath);
+  const projectName = path.basename(resolveStorageRoot(wsPath));
+
+  // Planning session with no files/commits: save a lightweight checkpoint
+  if (touchedFiles.length === 0 && commitHashes.length === 0 && isPlanning) {
+    const summary = existingSession?.sessionLabel
+      || existingSession?.taskSummary
+      || 'Planning session';
+    const checkpoint = createCheckpoint({
+      summary,
+      nextStep: existingSession?.nextStep || '',
+      gitBranch,
+      touchedFiles: [],
+      commitHashes: [],
+      workspaceRoot: wsPath,
+      source: 'auto',
+      sessionId,
+      sessionPhase: 'planning',
+      tags: ['plan'],
+    });
+
+    writer.saveCheckpoint(checkpoint, projectName);
+
+    writer.upsertSession({
+      sessionId,
+      sessionActive: false,
+      nextStep: checkpoint.nextStep || undefined,
+      branch: gitBranch ?? undefined,
+      updatedAt: checkpoint.timestamp,
+    });
+
+    console.log(`[KeepGoing] Plan checkpoint saved: ${summary}`);
+    process.exit(0);
+  }
+
   const commitMessages = getCommitMessagesSince(wsPath, lastSession?.timestamp);
 
   // Build SessionEvents for smart summary
@@ -58,8 +100,7 @@ export async function handleSaveCheckpoint(): Promise<void> {
   const summary = buildSmartSummary(events) ?? `Worked on ${touchedFiles.slice(0, 5).map(f => path.basename(f)).join(', ')}`;
   const nextStep = buildSmartNextStep(events);
 
-  const projectName = path.basename(resolveStorageRoot(wsPath));
-  const sessionId = generateSessionId({ workspaceRoot: wsPath, branch: gitBranch ?? undefined, worktreePath: wsPath });
+  const sessionPhase = existingSession?.sessionPhase;
   const checkpoint = createCheckpoint({
     summary,
     nextStep,
@@ -69,9 +110,10 @@ export async function handleSaveCheckpoint(): Promise<void> {
     workspaceRoot: wsPath,
     source: 'auto',
     sessionId,
+    ...(sessionPhase ? { sessionPhase } : {}),
+    ...(sessionPhase === 'planning' ? { tags: ['plan'] } : {}),
   });
 
-  const writer = new KeepGoingWriter(wsPath);
   writer.saveCheckpoint(checkpoint, projectName);
 
   // Mark current task as finished using multi-session API
