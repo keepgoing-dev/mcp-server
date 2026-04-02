@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1
+
+- Fix Stop hook creating ghost session duplicates by matching sessions on workspace path and branch instead of a hash that could mismatch Claude's session IDs
+
 ## 0.9.0
 
 - Add plan mode checkpoint support for structured planning sessions

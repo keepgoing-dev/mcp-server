@@ -38,10 +38,18 @@ export async function handleSaveCheckpoint(): Promise<void> {
 
   const gitBranch = getCurrentBranch(wsPath);
 
-  // Look up session phase from current tasks
-  const sessionId = generateSessionId({ workspaceRoot: wsPath, branch: gitBranch ?? undefined, worktreePath: wsPath });
+  // Look up existing session for this workspace+branch.
+  // The session was likely created by the post-tool or heartbeat hook using Claude's
+  // session_id (a UUID), which won't match generateSessionId's deterministic hash.
+  // Match by worktreePath + branch + sessionActive to find the right session first.
   const existingTasks = writer.readCurrentTasks();
-  const existingSession = existingTasks.find(t => t.sessionId === sessionId);
+  const existingSession = existingTasks.find(t =>
+    t.sessionActive && t.worktreePath === wsPath && t.branch === (gitBranch ?? undefined),
+  ) ?? existingTasks.find(t =>
+    t.sessionActive && t.worktreePath === wsPath,
+  );
+  const sessionId = existingSession?.sessionId
+    ?? generateSessionId({ workspaceRoot: wsPath, branch: gitBranch ?? undefined, worktreePath: wsPath });
   const isPlanning = existingSession?.sessionPhase === 'planning';
 
   // Skip only if there's nothing to capture AND we're not in a planning session
