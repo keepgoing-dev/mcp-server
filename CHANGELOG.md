@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.2
+
+- Prune stale project paths that no longer exist on disk during registration
+- Refactor storage root resolution to avoid redundant path lookups
+
 ## 0.9.1
 
 - Fix Stop hook creating ghost session duplicates by matching sessions on workspace path and branch instead of a hash that could mismatch Claude's session IDs
