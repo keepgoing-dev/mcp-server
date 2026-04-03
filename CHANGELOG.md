@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.4
+
+- Fix session labels truncating mid-word by breaking at word boundaries
+
 ## 0.9.3
 
 - Add HMAC-SHA256 signing to license store for tamper detection

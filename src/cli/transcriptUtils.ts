@@ -126,10 +126,8 @@ export function extractSessionLabel(transcriptPath: string): string | null {
 
       if (text.length < 20) continue;
 
-      // Cap at 80 chars to bound reads; caller applies display budget
-      if (text.length > 80) {
-        text = text.slice(0, 80);
-      }
+      // Cap at 80 chars to bound reads; truncate at word boundary with ellipsis
+      text = truncateAtWord(text, 80);
 
       return text;
     }
@@ -199,9 +197,7 @@ export function extractLatestUserLabel(transcriptPath: string): string | null {
 
       if (text.length < 20) continue;
 
-      if (text.length > 80) {
-        text = text.slice(0, 80);
-      }
+      text = truncateAtWord(text, 80);
 
       return text;
     }
