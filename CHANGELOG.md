@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.3
+
+- Add HMAC-SHA256 signing to license store for tamper detection
+- Shorten license revalidation interval from 24 hours to 6 hours
+
 ## 0.9.2
 
 - Prune stale project paths that no longer exist on disk during registration
