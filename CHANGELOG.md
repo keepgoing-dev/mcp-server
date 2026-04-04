@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.5
+
+- Enrich `continue_on` prompt with session timeline, key decisions, and smart truncation by priority
+- Auto-copy `continue_on` prompt to clipboard on macOS, Linux, and Windows
+- Add concise checkpoint text guidance with character limits on tool descriptions
+
 ## 0.9.4
 
 - Fix session labels truncating mid-word by breaking at word boundaries

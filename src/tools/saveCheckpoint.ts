@@ -21,9 +21,9 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
     'save_checkpoint',
     'Save a development checkpoint. Call this after completing a task or meaningful piece of work, not just at end of session. Each checkpoint helps the next session (or developer) pick up exactly where you left off.',
     {
-      summary: z.string().describe('What was accomplished in this session'),
-      nextStep: z.string().optional().describe('What to do next'),
-      blocker: z.string().optional().describe('Any blocker preventing progress'),
+      summary: z.string().describe('1 sentence, max 140 chars. What changed and why.'),
+      nextStep: z.string().optional().describe('Max 100 chars. What to do next.'),
+      blocker: z.string().optional().describe('Max 100 chars. Any blocker preventing progress.'),
     },
     async ({ summary, nextStep, blocker }) => {
       summary = stripAgentTags(summary);

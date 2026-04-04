@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { execFile } from 'node:child_process';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { KeepGoingReader } from '../storage.js';
 import {
@@ -6,6 +7,35 @@ import {
   formatContinueOnPrompt,
 } from '@keepgoingdev/shared';
 import type { FormatOptions } from '@keepgoingdev/shared';
+
+function copyToClipboard(text: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const platform = process.platform;
+    let cmd: string;
+    let args: string[];
+
+    if (platform === 'darwin') {
+      cmd = 'pbcopy';
+      args = [];
+    } else if (platform === 'linux') {
+      // xclip is widely available on Linux desktops
+      cmd = 'xclip';
+      args = ['-selection', 'clipboard'];
+    } else if (platform === 'win32') {
+      cmd = 'clip';
+      args = [];
+    } else {
+      resolve(false);
+      return;
+    }
+
+    const child = execFile(cmd, args, (err) => {
+      resolve(!err);
+    });
+    child.stdin?.write(text);
+    child.stdin?.end();
+  });
+}
 
 export function registerContinueOn(server: McpServer, reader: KeepGoingReader, workspacePath: string) {
   server.tool(
@@ -48,8 +78,18 @@ export function registerContinueOn(server: McpServer, reader: KeepGoingReader, w
 
       const prompt = formatContinueOnPrompt(context, formatOpts);
 
+      const copied = await copyToClipboard(prompt);
+
       return {
-        content: [{ type: 'text' as const, text: prompt }],
+        content: [
+          { type: 'text' as const, text: prompt },
+          {
+            type: 'text' as const,
+            text: copied
+              ? '\n---\nPrompt copied to clipboard. Paste it into your target AI tool.'
+              : '\n---\nCould not copy to clipboard automatically. Use /copy to copy the prompt above.',
+          },
+        ],
       };
     },
   );
