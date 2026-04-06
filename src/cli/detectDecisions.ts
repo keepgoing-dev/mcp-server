@@ -3,6 +3,8 @@ import {
   getHeadCommitHash,
   getCommitMessageByHash,
   getFilesChangedInCommit,
+  getFilesChangedWithStatus,
+  getFileInsertionsInCommit,
   tryDetectDecision,
   getLicenseForFeatureWithRevalidation,
 } from '@keepgoingdev/shared';
@@ -38,6 +40,8 @@ export async function handleDetectDecisions(): Promise<void> {
   if (!commitMessage) process.exit(0);
 
   const files = getFilesChangedInCommit(wsPath, headHash);
+  const filesWithStatus = getFilesChangedWithStatus(wsPath, headHash);
+  const fileStats = getFileInsertionsInCommit(wsPath, headHash);
 
   const detected = tryDetectDecision({
     workspacePath: wsPath,
@@ -45,6 +49,8 @@ export async function handleDetectDecisions(): Promise<void> {
     commitHash: headHash,
     commitMessage,
     filesChanged: files,
+    filesWithStatus,
+    fileStats,
   });
 
   if (detected) {

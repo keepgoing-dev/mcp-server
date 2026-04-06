@@ -10,6 +10,8 @@ import {
   getCommitsSince,
   getCommitMessagesSince,
   getHeadCommitHash,
+  getFilesChangedWithStatus,
+  getFileInsertionsInCommit,
   tryDetectDecision,
   resolveStorageRoot,
   generateSessionId,
@@ -84,6 +86,8 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
         const commitMessages = getCommitMessagesSince(workspacePath, lastSession?.timestamp);
         const headHash = getHeadCommitHash(workspacePath);
         if (commitMessages.length > 0 && headHash) {
+          const filesWithStatus = getFilesChangedWithStatus(workspacePath, headHash);
+          const fileStats = getFileInsertionsInCommit(workspacePath, headHash);
           const detected = tryDetectDecision({
             workspacePath,
             checkpointId: checkpoint.id,
@@ -91,6 +95,8 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
             commitHash: headHash,
             commitMessage: commitMessages[0],
             filesChanged: touchedFiles,
+            filesWithStatus,
+            fileStats,
           });
           if (detected) {
             lines.push(`- **Decision detected:** ${detected.category} (${(detected.confidence * 100).toFixed(0)}% confidence)`);

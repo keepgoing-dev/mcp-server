@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0
+
+- Rewrite decision detection from keyword matching to structural signal analysis
+- Pass file status and stats from git diff-tree to decision classifier for richer signals
+
 ## 0.9.5
 
 - Enrich `continue_on` prompt with session timeline, key decisions, and smart truncation by priority
