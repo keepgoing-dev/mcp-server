@@ -7,6 +7,8 @@ import {
   getCommitsSince,
   getCommitMessagesSince,
   getFilesChangedInCommit,
+  getFilesChangedWithStatus,
+  getFileInsertionsInCommit,
   tryDetectDecision,
   getLicenseForFeatureWithRevalidation,
   generateSessionId,
@@ -141,6 +143,8 @@ export async function handleSaveCheckpoint(): Promise<void> {
       const message = commitMessages[i];
       if (!hash || !message) continue;
       const files = getFilesChangedInCommit(wsPath, hash);
+      const filesWithStatus = getFilesChangedWithStatus(wsPath, hash);
+      const fileStats = getFileInsertionsInCommit(wsPath, hash);
       const detected = tryDetectDecision({
         workspacePath: wsPath,
         checkpointId: checkpoint.id,
@@ -148,6 +152,8 @@ export async function handleSaveCheckpoint(): Promise<void> {
         commitHash: hash,
         commitMessage: message,
         filesChanged: files,
+        filesWithStatus,
+        fileStats,
       });
       if (detected) {
         console.log(`[KeepGoing] Decision detected: ${detected.category} (${(detected.confidence * 100).toFixed(0)}% confidence)`);
