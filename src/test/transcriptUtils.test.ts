@@ -309,12 +309,12 @@ describe('extractCurrentAction', () => {
     assert.equal(extractCurrentAction(p), 'working');
   });
 
-  it('returns "done" when last assistant entry is text-only (no tool use)', () => {
+  it('returns null when last assistant entry is text-only (no tool use)', () => {
     const p = writeTmp('action-done.jsonl', [
       assistantToolEntry('Edit'),
       assistantTextEntry('I have finished editing the files.'),
     ]);
-    assert.equal(extractCurrentAction(p), 'done');
+    assert.equal(extractCurrentAction(p), null);
   });
 
   it('returns null when no assistant entries exist', () => {
