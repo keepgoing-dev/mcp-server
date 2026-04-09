@@ -37,7 +37,7 @@ describe('resolveWsPath', () => {
     try {
       // Simulates: keepgoing <dir>
       const result = resolveWsPath([dir]);
-      assert.equal(result, dir);
+      assert.equal(result, fs.realpathSync(dir));
     } finally {
       cleanup();
     }
@@ -48,7 +48,7 @@ describe('resolveWsPath', () => {
     try {
       // Simulates: keepgoing --verbose <dir>
       const result = resolveWsPath(['--verbose', dir]);
-      assert.equal(result, dir);
+      assert.equal(result, fs.realpathSync(dir));
     } finally {
       cleanup();
     }
@@ -73,7 +73,7 @@ describe('resolveWsPath', () => {
       fs.mkdirSync(subDir, { recursive: true });
       // resolveWsPath calls findGitRoot, which returns the repo root
       const result = resolveWsPath([subDir]);
-      assert.equal(result, dir);
+      assert.equal(result, fs.realpathSync(dir));
     } finally {
       cleanup();
     }

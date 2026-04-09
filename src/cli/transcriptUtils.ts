@@ -234,6 +234,10 @@ export function extractCurrentAction(transcriptPath: string): string | null {
     const tail = buf.toString('utf-8');
     const lines = tail.split('\n').reverse();
 
+    // Track whether we've passed a user entry before finding an assistant entry.
+    // If so, the user sent a message the AI hasn't responded to yet.
+    let pendingUserMessage = false;
+
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
@@ -245,14 +249,24 @@ export function extractCurrentAction(transcriptPath: string): string | null {
         continue;
       }
 
+      if (isUserEntry(entry)) {
+        pendingUserMessage = true;
+        continue;
+      }
+
       if (!isAssistantEntry(entry)) continue;
+
+      // User sent a message the AI hasn't responded to yet — show thinking
+      if (pendingUserMessage) {
+        return 'thinking';
+      }
 
       const toolName = getToolUseFromEntry(entry);
       if (toolName) {
         return TOOL_VERB_MAP[toolName] ?? 'working';
       }
-      // Last assistant entry is text-only — AI finished its turn
-      return 'done';
+      // Last assistant entry is text-only — AI finished its turn, no active action
+      return null;
     }
   } catch {
     // Ignore errors
