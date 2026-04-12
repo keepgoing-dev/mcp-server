@@ -1,4 +1,13 @@
-import { formatRelativeTime, getLicenseForFeatureWithRevalidation } from '@keepgoingdev/shared';
+import {
+  formatRelativeTime,
+  getLicenseForFeatureWithRevalidation,
+  readKnownProjects,
+  getColdProjects,
+  filterNudgeable,
+  checkPrStatus,
+  checkBranchTransition,
+  type ProjectActivityData,
+} from '@keepgoingdev/shared';
 import { KeepGoingReader } from '../storage.js';
 import { resolveWsPath } from './util.js';
 import { migrateStatusline } from './migrate.js';
@@ -17,13 +26,47 @@ export async function handlePrintMomentum(): Promise<void> {
   }
 
   const touchedCount = lastSession.touchedFiles?.length ?? 0;
+
+  // Staleness checks - run before building output lines
+  let displayNextStep = lastSession.nextStep;
+  let prNote: string | null = null;
+  const textToCheck = [lastSession.summary, lastSession.nextStep].filter(Boolean).join(' ');
+  if (textToCheck) {
+    const prStatus = checkPrStatus(textToCheck);
+    if (prStatus) {
+      if (prStatus.state === 'MERGED') {
+        displayNextStep = `PR #${prStatus.number} was merged.`;
+      } else if (prStatus.state === 'CLOSED') {
+        prNote = `PR #${prStatus.number} was closed without merging.`;
+      }
+    }
+  }
+
+  let branchNote: string | null = null;
+  if (lastSession.gitBranch) {
+    const transition = checkBranchTransition(lastSession.gitBranch);
+    if (transition) {
+      if (!transition.previousBranchExists) {
+        branchNote = `Branch \`${transition.previousBranch}\` has been deleted.`;
+      } else {
+        branchNote = `You were on \`${transition.previousBranch}\`, now on \`${transition.currentBranch}\`.`;
+      }
+    }
+  }
+
   const lines: string[] = [];
   lines.push(`[KeepGoing] Last checkpoint: ${formatRelativeTime(lastSession.timestamp)}`);
   if (lastSession.summary) {
     lines.push(`  Summary: ${lastSession.summary}`);
   }
-  if (lastSession.nextStep) {
-    lines.push(`  Next step: ${lastSession.nextStep}`);
+  if (displayNextStep) {
+    lines.push(`  Next step: ${displayNextStep}`);
+  }
+  if (prNote) {
+    lines.push(`  Note: ${prNote}`);
+  }
+  if (branchNote) {
+    lines.push(`  Note: ${branchNote}`);
   }
   if (lastSession.blocker) {
     lines.push(`  Blocker: ${lastSession.blocker}`);
@@ -40,6 +83,46 @@ export async function handlePrintMomentum(): Promise<void> {
   const migrationMsg = migrateStatusline(wsPath);
   if (migrationMsg) {
     lines.push(migrationMsg);
+  }
+
+  // Cold project warnings (for other projects, not the current one)
+  try {
+    const known = readKnownProjects();
+    const currentProject = wsPath;
+    const otherProjects = known.projects.filter(p => p.path !== currentProject);
+
+    if (otherProjects.length > 0) {
+      const readActivity = (projectPath: string): ProjectActivityData => {
+        try {
+          const r = new KeepGoingReader(projectPath);
+          if (!r.exists()) return { lastActivityAt: undefined };
+          const state = r.getState();
+          const last = r.getLastSession();
+          return {
+            lastActivityAt: state?.lastActivityAt,
+            nextStep: last?.nextStep,
+            summary: last?.summary,
+          };
+        } catch {
+          return { lastActivityAt: undefined };
+        }
+      };
+
+      const coldProjects = getColdProjects(otherProjects, 7, readActivity);
+      const nudgeablePaths = new Set(filterNudgeable(coldProjects.map(p => p.path)));
+      const nudgeable = coldProjects.filter(p => nudgeablePaths.has(p.path));
+
+      if (nudgeable.length > 0) {
+        lines.push('');
+        lines.push(`  Cold projects (${nudgeable.length}):`);
+        for (const cold of nudgeable.slice(0, 3)) {
+          const nextInfo = cold.nextStep ? ` Next: ${cold.nextStep}` : '';
+          lines.push(`    - ${cold.name} (${cold.daysSinceActivity}d inactive)${nextInfo}`);
+        }
+      }
+    }
+  } catch {
+    // Never fail the momentum printout over cold detection
   }
 
   console.log(lines.join('\n'));

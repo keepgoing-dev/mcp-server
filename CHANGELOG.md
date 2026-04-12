@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0
+
+- Filter Claude Code framework messages from session labels
+- Add staleness detection to SessionStart briefing (PR status, branch transitions)
+- Reframe briefing to lead with next step instead of last worked on
+- Add cold project detection and nudge state persistence
+- Fix shell injection vulnerability in shared utilities
+- Fix race condition in nudge state atomic writes
+
 ## 0.10.0
 
 - Rewrite decision detection from keyword matching to structural signal analysis
