@@ -36,6 +36,13 @@ export function truncateAtWord(text: string, max: number): string {
 const FILLER_PREFIX_RE = /^(i want to|can you|please|let['']?s|could you|help me|i need to|i['']d like to|implement the following plan[:\s]*|implement this plan[:\s]*)\s*/i;
 const MARKDOWN_HEADING_RE = /^#+\s+/;
 
+/**
+ * Matches framework/system messages that leak into the transcript as user entries.
+ * These are Claude Code internal messages (skill loading, plugin cache paths, etc.)
+ * that should never be used as session labels.
+ */
+const FRAMEWORK_NOISE_RE = /^(base directory for this skill:|skill directory:|loading skill |\.claude\/plugins\/cache)/i;
+
 // Claude Code transcript JSONL entry shape (wrapped format)
 interface TranscriptEntry {
   type?: string;
@@ -111,6 +118,9 @@ export function extractSessionLabel(transcriptPath: string): string | null {
       // Skip system-injected messages (bracket-prefixed or starting with an XML tag)
       if (text.startsWith('[') || /^<[a-z][\w-]*[\s>]/.test(text)) continue;
 
+      // Skip Claude Code framework messages (skill loading, plugin cache paths)
+      if (FRAMEWORK_NOISE_RE.test(text)) continue;
+
       // Strip any residual agent framework tags
       text = stripAgentTags(text);
       if (!text) continue;
@@ -181,6 +191,9 @@ export function extractLatestUserLabel(transcriptPath: string): string | null {
 
       // Skip system-injected messages (bracket-prefixed or starting with an XML tag)
       if (text.startsWith('[') || /^<[a-z][\w-]*[\s>]/.test(text)) continue;
+
+      // Skip Claude Code framework messages (skill loading, plugin cache paths)
+      if (FRAMEWORK_NOISE_RE.test(text)) continue;
 
       // Strip any residual agent framework tags
       text = stripAgentTags(text);
