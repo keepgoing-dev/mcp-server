@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { execSync, spawn } from 'node:child_process';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { findGitRoot } from '@keepgoingdev/shared';
@@ -27,7 +28,28 @@ import { handleContinueOn } from './cli/continueOn.js';
 import { handleDetectDecisions } from './cli/detectDecisions.js';
 import { handleHeartbeat } from './cli/heartbeat.js';
 
-// CLI flag dispatch table. Each handler calls process.exit() when done.
+function keepgoingCliAvailable(): boolean {
+  try {
+    execSync('which keepgoing', { stdio: 'pipe', timeout: 2000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const CLI_DEPRECATION_MAP: Record<string, string> = {
+  '--print-momentum': 'keepgoing momentum --hook',
+  '--save-checkpoint': 'keepgoing save --hook',
+  '--update-task': 'keepgoing task-update --hook',
+  '--update-task-from-hook': 'keepgoing task-update --hook',
+  '--print-current': 'keepgoing task-update --hook',
+  '--statusline': 'keepgoing statusline',
+  '--continue-on': 'keepgoing continue',
+  '--detect-decisions': 'keepgoing save --hook',
+  '--heartbeat': 'keepgoing heartbeat --hook',
+};
+
+// Legacy CLI flag dispatch table - kept for backward compat
 const CLI_HANDLERS: Record<string, () => Promise<void>> = {
   '--print-momentum': handlePrintMomentum,
   '--save-checkpoint': handleSaveCheckpoint,
@@ -42,7 +64,21 @@ const CLI_HANDLERS: Record<string, () => Promise<void>> = {
 
 const flag = process.argv.slice(2).find(a => a in CLI_HANDLERS);
 if (flag) {
-  await CLI_HANDLERS[flag]();
+  const newCmd = CLI_DEPRECATION_MAP[flag];
+  if (newCmd && keepgoingCliAvailable()) {
+    // Delegate to keepgoing CLI
+    console.error(`[KeepGoing] Note: Use "${newCmd}" instead of "npx @keepgoingdev/mcp-server ${flag}"`);
+    const parts = newCmd.split(' ');
+    const child = spawn(parts[0], parts.slice(1), { stdio: 'inherit' });
+    child.on('close', (code) => process.exit(code ?? 0));
+    child.on('error', async () => {
+      // Fall back to legacy handler
+      await CLI_HANDLERS[flag]();
+    });
+  } else {
+    // No keepgoing CLI available, run legacy handler
+    await CLI_HANDLERS[flag]();
+  }
 } else {
   // Default: start MCP server
   // Workspace path can be passed as an argument, otherwise defaults to CWD.
