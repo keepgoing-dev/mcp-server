@@ -33,7 +33,7 @@ claude mcp add keepgoing --scope user -- npx -y @keepgoingdev/mcp-server
 claude mcp add keepgoing --scope project -- npx -y @keepgoingdev/mcp-server
 ```
 
-Then ask Claude Code to run `setup_project` (with `scope: "user"` for global, or default for per-project) to add session hooks and CLAUDE.md instructions.
+Then run `keepgoing setup claude` to configure hooks and rules.
 
 ### Cursor, Windsurf, and other tools
 
@@ -62,7 +62,6 @@ Add to your MCP config file (`~/.cursor/mcp.json` for Cursor, or the equivalent 
 | `get_whats_hot` | See recently active files and branches across sessions. |
 | `continue_on` | Export your development context as a formatted prompt for another AI tool (chatgpt, gemini, copilot, claude, general). |
 | `save_checkpoint` | Save a development checkpoint after completing a task or meaningful piece of work. |
-| `setup_project` | Set up KeepGoing in the current project. Adds session hooks and CLAUDE.md instructions for automatic checkpoints. |
 
 ### Paid Add-ons
 
