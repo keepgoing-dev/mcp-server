@@ -6,7 +6,20 @@ KeepGoing auto-captures checkpoints (what you were doing, what's next, which fil
 
 ## Quick Setup
 
-### Claude Code
+The easiest way to get started is with the installer, which installs the CLI globally and runs the setup wizard:
+
+```bash
+curl -fsSL https://keepgoing.dev/install.sh | bash
+```
+
+For a specific tool:
+
+```bash
+curl -fsSL https://keepgoing.dev/install.sh | bash -s -- claude
+curl -fsSL https://keepgoing.dev/install.sh | bash -s -- vscode
+```
+
+### Claude Code (manual)
 
 **Global (recommended)** — works across all your projects:
 
@@ -25,21 +38,6 @@ Then ask Claude Code to run `setup_project` (with `scope: "user"` for global, or
 ### Cursor, Windsurf, and other tools
 
 Add to your MCP config file (`~/.cursor/mcp.json` for Cursor, or the equivalent for your tool):
-
-```json
-{
-  "mcpServers": {
-    "keepgoing": {
-      "command": "npx",
-      "args": ["-y", "@keepgoingdev/mcp-server"]
-    }
-  }
-}
-```
-
-### Manual config
-
-Add to your MCP config (e.g., `~/.claude.json` for global, or `.mcp.json` for per-project):
 
 ```json
 {

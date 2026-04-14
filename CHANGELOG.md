@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.1
+
+- Update hook constants to use keepgoing CLI instead of npx mcp-server
+- Add doctor detection for stale npx-based hooks
+
 ## 0.11.0
 
 - Filter Claude Code framework messages from session labels
