@@ -11,7 +11,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   noExternal: ['@keepgoingdev/shared'],
-  external: ['@modelcontextprotocol/sdk', 'zod'],
+  external: ['@modelcontextprotocol/sdk', 'zod', 'sql.js'],
   esbuildOptions(options) {
     // Resolve shared from TypeScript source to avoid CJS/ESM mismatch
     options.alias = {

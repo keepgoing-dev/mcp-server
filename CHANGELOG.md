@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.0
+
+- Initialize GlobalDatabase in read-only mode at startup for unified SQLite access
+- Add BYO API key support: auto-trigger background refinement after decision detection
+- Show decision count teaser for free users
+- Wire summary-text-first heuristic into save_checkpoint for more accurate decision detection
+- Fix SQLite writes, contrast regex, and migration safety in decision detection
+
 ## 0.11.1
 
 - Update hook constants to use keepgoing CLI instead of npx mcp-server

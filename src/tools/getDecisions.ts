@@ -24,6 +24,16 @@ export function registerGetDecisions(server: McpServer, reader: KeepGoingReader)
       }
 
       if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !(await getLicenseForFeatureWithRevalidation('decisions'))) {
+        const allDecisions = reader.getDecisions();
+        const count = allDecisions.length;
+        if (count > 0) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `${count} decision${count === 1 ? '' : 's'} detected. Upgrade to Pro to view.\nVisit https://keepgoing.dev/add-ons to purchase.`,
+            }],
+          };
+        }
         return {
           content: [
             {
