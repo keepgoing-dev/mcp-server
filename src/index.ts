@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 import { execSync, spawn } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { findGitRoot } from '@keepgoingdev/shared';
+import { findGitRoot, GlobalDatabase } from '@keepgoingdev/shared';
 import { KeepGoingReader } from './storage.js';
 import { registerGetMomentum } from './tools/getMomentum.js';
 import { registerGetSessionHistory } from './tools/getSessionHistory.js';
@@ -85,6 +88,18 @@ if (flag) {
   // MCP hosts (Claude Code, etc.) typically launch the server with the project root as CWD.
   const workspacePath = findGitRoot(process.argv[2] || process.cwd());
   const reader = new KeepGoingReader(workspacePath);
+
+  // Initialize GlobalDatabase in read-only mode (non-fatal if unavailable)
+  try {
+    await GlobalDatabase.init();
+    const globalDir = path.join(os.homedir(), '.keepgoing');
+    const dbPath = path.join(globalDir, 'keepgoing-global.db');
+    if (fs.existsSync(dbPath)) {
+      GlobalDatabase.open(globalDir, { readOnly: true });
+    }
+  } catch {
+    // Non-fatal: MCP server works without global DB
+  }
 
   const server = new McpServer({
     name: 'keepgoing',

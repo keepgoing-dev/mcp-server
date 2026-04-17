@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { KeepGoingReader } from '../storage.js';
@@ -16,6 +17,9 @@ import {
   resolveStorageRoot,
   generateSessionId,
   stripAgentTags,
+  GlobalDatabase,
+  detectLlmProvider,
+  META_AUTO_REFINE_ENABLED,
 } from '@keepgoingdev/shared';
 
 export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReader, workspacePath: string) {
@@ -81,25 +85,48 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
         `- **Commits captured:** ${commitHashes.length}`,
       ];
 
-      // Decision detection
-      if (commitHashes.length > 0) {
-        const commitMessages = getCommitMessagesSince(workspacePath, lastSession?.timestamp);
-        const headHash = getHeadCommitHash(workspacePath);
-        if (commitMessages.length > 0 && headHash) {
-          const filesWithStatus = getFilesChangedWithStatus(workspacePath, headHash);
-          const fileStats = getFileInsertionsInCommit(workspacePath, headHash);
-          const detected = tryDetectDecision({
-            workspacePath,
-            checkpointId: checkpoint.id,
-            gitBranch,
-            commitHash: headHash,
-            commitMessage: commitMessages[0],
-            filesChanged: touchedFiles,
-            filesWithStatus,
-            fileStats,
-          });
-          if (detected) {
-            lines.push(`- **Decision detected:** ${detected.category} (${(detected.confidence * 100).toFixed(0)}% confidence)`);
+      // Decision detection (always on, summary-first heuristic)
+      {
+        const headHash = commitHashes.length > 0 ? getHeadCommitHash(workspacePath) : null;
+        const filesWithStatus = headHash ? getFilesChangedWithStatus(workspacePath, headHash) : undefined;
+        const fileStats = headHash ? getFileInsertionsInCommit(workspacePath, headHash) : undefined;
+        const commitMessages = commitHashes.length > 0
+          ? getCommitMessagesSince(workspacePath, lastSession?.timestamp)
+          : [];
+        const detected = tryDetectDecision({
+          workspacePath,
+          checkpointId: checkpoint.id,
+          gitBranch,
+          commitHash: headHash ?? '',
+          commitMessage: commitMessages[0] ?? summary,
+          summary,
+          source: 'manual',
+          filesChanged: touchedFiles,
+          filesWithStatus,
+          fileStats,
+        });
+        if (detected) {
+          lines.push(`- **Decision detected:** ${detected.category} (${(detected.confidence * 100).toFixed(0)}% confidence)`);
+
+          // Auto-refine: spawn background process if consent given and provider available
+          if (GlobalDatabase.isOpen()) {
+            const gdb = GlobalDatabase.current();
+            const autoRefineEnabled = gdb.getMeta(META_AUTO_REFINE_ENABLED) === 'true';
+            if (autoRefineEnabled) {
+              const provider = detectLlmProvider({ skipCliDetection: false });
+              if (provider.type !== 'none') {
+                try {
+                  const child = spawn(
+                    'keepgoing',
+                    ['refine', '--background', '--limit', '1', '--cwd', workspacePath],
+                    { detached: true, stdio: 'ignore' },
+                  );
+                  child.unref();
+                } catch {
+                  // Background refine is best-effort
+                }
+              }
+            }
           }
         }
       }
