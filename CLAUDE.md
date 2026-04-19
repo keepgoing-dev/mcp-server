@@ -4,50 +4,68 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Dev
 
+From the monorepo root:
+
 ```bash
-npm run mcp:build    # Build with tsup (from monorepo root)
-npm run mcp:watch    # Watch mode (from monorepo root)
+npm run mcp:build    # Build with tsup
+npm run mcp:watch    # Watch mode
+npm run mcp:test     # Run tests
 ```
 
-Or locally:
+Locally (from this directory):
 
 ```bash
 npx tsup             # Build
 npx tsup --watch     # Watch
+node --import tsx --test $(find src/test -name '*.test.ts' | tr '\n' ' ')  # Run tests
+tsc --noEmit         # Type-check only
 ```
 
-No tests or linter are configured for this package. Type-checking is `noEmit` in tsconfig, so `tsc --noEmit` validates types.
+No linter is configured for this package.
 
 ## Architecture
 
-This is the MCP server package (`@keepgoingdev/mcp-server`) for KeepGoing. It serves two roles:
+This package (`@keepgoingdev/mcp-server`) has two runtime roles driven by a single entry point (`src/index.ts`):
 
-1. **MCP server** (default): Connects via stdio, exposes tools and prompts to MCP hosts (Claude Code, etc.)
-2. **CLI mode**: When invoked with flags (`--print-momentum`, `--save-checkpoint`, `--update-task`, `--print-current`), runs a one-shot CLI handler and exits. Used for shell hook integration.
+1. **MCP server** (default): Connects via stdio to MCP hosts (Claude Code, Cursor, etc.). Exposes tools and prompts.
+2. **Legacy CLI mode**: When invoked with flags like `--save-checkpoint`, `--heartbeat`, etc., runs a one-shot handler and exits. These flags are deprecated - the server now tries to delegate to the `keepgoing` CLI binary and falls back to built-in handlers if unavailable.
 
-### Entry Point (`src/index.ts`)
+### Entry Point Dispatch
 
-CLI flag dispatch is checked first. If no flag matches, the MCP server starts. The server resolves the workspace path from `process.argv[2]` or `process.cwd()`, finds the git root, and creates a `KeepGoingReader`.
+`src/index.ts` checks `process.argv` for known CLI flags first. If a flag matches, it checks whether the standalone `keepgoing` CLI is on PATH and delegates to it with a deprecation notice. If the CLI is unavailable, the legacy handler in `src/cli/` runs directly. If no flag matches, the MCP server starts.
 
-### Key Patterns
+### Tools (`src/tools/`)
 
-**Tool registration**: Each tool is in `src/tools/<name>.ts` and exports a `register<Name>(server, reader, ...)` function. Tools use `server.tool(name, description, schema, handler)` from `@modelcontextprotocol/sdk`. The handler returns `{ content: [{ type: 'text', text }] }`.
+Each file exports a `register<Name>(server, reader, workspacePath?)` function. All tools follow the same pattern: validate input with zod, read data via `KeepGoingReader` (or call shared utilities for git data), and return `{ content: [{ type: 'text', text }] }`.
 
-**Prompt registration**: Each prompt is in `src/prompts/<name>.ts` and exports a `register<Name>Prompt(server)` function. Prompts return canned user messages that instruct the LLM to call specific tools.
+Key tools:
+- `save_checkpoint` - writes via `KeepGoingWriter` from shared, also runs decision detection and triggers background `keepgoing refine` if auto-refine is enabled
+- `get_momentum` / `get_reentry_briefing` - both delegate to `generateEnrichedBriefing` from shared; `get_momentum` without `tier`/`model` uses a simpler legacy format for backward compatibility
+- `get_context_snapshot` - ultra-compact single-line orientation using `generateContextSnapshot` from shared
+- `get_current_task` - multi-session awareness (Pro feature, gated by license)
 
-**CLI handlers**: Each CLI mode is in `src/cli/<name>.ts`. Handlers call `process.exit()` when done. They create their own `KeepGoingReader` via `resolveWsPath()`.
+### Prompts (`src/prompts/`)
+
+Each file exports a `register<Name>Prompt(server)` function. Prompts are canned user messages that instruct the LLM to call specific tools in sequence. They do not call tools themselves.
+
+### CLI Handlers (`src/cli/`)
+
+Used for shell hook integration (Claude Code hooks, git hooks, etc.). Each handler calls `resolveWsPath()` from `src/cli/util.ts` to find the git root, then creates its own `KeepGoingWriter` or `KeepGoingReader`. Handlers call `process.exit()` when done.
+
+Notable handlers:
+- `heartbeat.ts` - reads JSON from stdin (hook payload), throttles writes to 30s intervals, upserts session presence in `current-tasks.json`, extracts a session label from transcript on first heartbeat
+- `detectDecisions.ts` - reads Claude transcript JSON from stdin and runs decision detection heuristics
 
 ### Storage (`src/storage.ts`)
 
-`KeepGoingReader` is a read-only accessor for the `.keepgoing/` directory. It does not write files. It supports:
-- Worktree-aware scoping (auto-filters to current branch in git worktrees)
-- Branch scope resolution for tools that accept a `branch` parameter (`"all"`, explicit name, or auto-detect)
-- Lazy-cached branch resolution
-
-All write operations come from `@keepgoingdev/shared` (`KeepGoingWriter`), not from this package.
+Re-exports `KeepGoingReader` and `BranchScope` from `@keepgoingdev/shared`. The reader is read-only - all writes go through `KeepGoingWriter` from shared. `KeepGoingReader` supports worktree-aware branch scoping and lazy-cached branch resolution.
 
 ### Build (`tsup.config.ts`)
 
-- `@keepgoingdev/shared` is bundled in (via `noExternal`) using a source alias to avoid CJS/ESM mismatch
-- `@modelcontextprotocol/sdk` and `zod` are kept external
+- `@keepgoingdev/shared` is bundled in (via `noExternal`) using a source alias pointing at `packages/shared/src/index.ts` to avoid CJS/ESM mismatch and enable watch-mode hot reload without rebuilding shared
+- `@modelcontextprotocol/sdk`, `zod`, and `sql.js` are kept external
 - Output is ESM only, targeting Node 20
+
+### Feature Gating
+
+Pro tools (`get_decisions`, `get_current_task`) check `licenseService.isFeatureActive()` from shared. Use `KEEPGOING_PRO_BYPASS=1` to bypass during development.

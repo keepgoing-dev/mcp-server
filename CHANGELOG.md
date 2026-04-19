@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.13.0
+
+- `save_checkpoint` now records `lastCheckpointAt` on the session task so the statusline can show time since last save
+- Fix `save_checkpoint` to correctly join sessions created by the hook handler, preventing duplicate session rows
+
+## 0.12.2
+
+- Internal cleanup: remove unused variable in save_checkpoint handler
+- Shared package updates: settings.local.json routing and storage refactors
+
 ## 0.12.1
 
 - Improve setup.ts to prefer native kg binary when available for shell integration

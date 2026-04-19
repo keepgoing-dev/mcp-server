@@ -30,8 +30,9 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
       summary: z.string().describe('1 sentence, max 140 chars. What changed and why.'),
       nextStep: z.string().optional().describe('Max 100 chars. What to do next.'),
       blocker: z.string().optional().describe('Max 100 chars. Any blocker preventing progress.'),
+      sessionId: z.string().optional().describe('Claude Code session UUID. When omitted, joins the most-recent active task row for this worktree so checkpoints share the sessionId the hook writes to.'),
     },
-    async ({ summary, nextStep, blocker }) => {
+    async ({ summary, nextStep, blocker, sessionId: explicitSessionId }) => {
       summary = stripAgentTags(summary);
       nextStep = nextStep ? stripAgentTags(nextStep) : nextStep;
       blocker = blocker ? stripAgentTags(blocker) : blocker;
@@ -44,10 +45,18 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
       const projectName = path.basename(resolveStorageRoot(workspacePath));
 
       const writer = new KeepGoingWriter(workspacePath);
-      const sessionId = generateSessionId({ workspaceRoot: workspacePath, branch: gitBranch ?? undefined, worktreePath: workspacePath });
-
-      // Look up existing session to determine phase
       const existingTasks = writer.readCurrentTasks();
+
+      // Prefer explicit sessionId; else join the most-recent active hook-written row
+      // for this worktree so heartbeat/task-update and save_checkpoint share one row
+      // (and the statusline sees lastCheckpointAt). Final fallback: deterministic hash.
+      const activeForWorktree = existingTasks
+        .filter(t => t.sessionActive && t.worktreePath === workspacePath)
+        .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''))[0];
+      const sessionId = explicitSessionId
+        ?? activeForWorktree?.sessionId
+        ?? generateSessionId({ workspaceRoot: workspacePath, branch: gitBranch ?? undefined, worktreePath: workspacePath });
+
       const existingSession = existingTasks.find(t => t.sessionId === sessionId);
       const sessionPhase = existingSession?.sessionPhase;
 
@@ -67,7 +76,6 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
 
       writer.saveCheckpoint(checkpoint, projectName);
 
-      // Upsert current task to keep session tracking in sync
       writer.upsertSession({
         sessionId,
         sessionActive: true,
@@ -75,6 +83,7 @@ export function registerSaveCheckpoint(server: McpServer, reader: KeepGoingReade
         updatedAt: checkpoint.timestamp,
         taskSummary: summary,
         nextStep: nextStep || undefined,
+        lastCheckpointAt: checkpoint.timestamp,
       });
 
       const lines: string[] = [

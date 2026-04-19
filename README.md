@@ -1,8 +1,8 @@
 # @keepgoingdev/mcp-server
 
-MCP server for [KeepGoing.dev](https://keepgoing.dev) that gives AI coding assistants persistent project memory.
+MCP server for [KeepGoing.dev](https://keepgoing.dev) - a momentum companion for developers. KeepGoing helps you keep going on projects when you return after time away.
 
-KeepGoing auto-captures checkpoints (what you were doing, what's next, which files matter) on git commits, branch switches, and inactivity. When you start a new session, your AI assistant reads your last context instead of re-inferring everything from scratch. Local-first, no account required.
+KeepGoing auto-captures checkpoints (what you were doing, what's next, which files matter) on git commits, branch switches, and inactivity. When you start a new session, your AI assistant reads your last checkpoint instead of re-inferring everything from scratch. Local-first, no account required.
 
 ## Quick Setup
 
