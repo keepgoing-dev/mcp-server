@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.1
+
+- Prevent temp dirs and common home subdirectories (Downloads, Desktop, etc.) from being auto-registered as projects
+
 ## 0.14.0
 
 - Improve Continue On export to focus on what AI tools cannot discover on their own: intent, blockers, decision rationale, and parallel-session conflicts. Git history and file trees are now represented as short pointers rather than full dumps, reducing token waste and highlighting what only the human knows.
