@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0
+
+- Improve Continue On export to focus on what AI tools cannot discover on their own: intent, blockers, decision rationale, and parallel-session conflicts. Git history and file trees are now represented as short pointers rather than full dumps, reducing token waste and highlighting what only the human knows.
+
 ## 0.13.0
 
 - `save_checkpoint` now records `lastCheckpointAt` on the session task so the statusline can show time since last save

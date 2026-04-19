@@ -2,6 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documentation
+
+When you add, remove, or change MCP tools or server behavior, update the docs page using a Haiku sub-agent:
+
+```
+Agent({
+  subagent_type: "haiku",
+  model: "haiku",
+  description: "Update MCP server docs page",
+  prompt: "Update apps/web/src/pages/docs/mcp-server.astro to reflect: [describe what changed]. Explain what each tool does and when AI tools call it. No em dashes."
+})
+```
+
+Docs page: `apps/web/src/pages/docs/mcp-server.astro`
+
 ## Build & Dev
 
 From the monorepo root:
