@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.2
+
+- Improve `get_decisions` tool description with explicit trigger guidance so AI tools call it at the right moments
+
 ## 0.14.1
 
 - Prevent temp dirs and common home subdirectories (Downloads, Desktop, etc.) from being auto-registered as projects

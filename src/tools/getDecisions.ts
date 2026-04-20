@@ -6,7 +6,12 @@ import { formatRelativeTime, getLicenseForFeatureWithRevalidation } from '@keepg
 export function registerGetDecisions(server: McpServer, reader: KeepGoingReader) {
   server.tool(
     'get_decisions',
-    'Get recent decision records. Returns detected high-signal commits with their category, confidence, and rationale.',
+    'Retrieve past architectural decisions automatically captured from high-signal commits. ' +
+    'Call this BEFORE modifying code in areas likely to have past decisions: auth systems, ' +
+    'database schemas, API contracts, infrastructure config, migrations, or core architectural ' +
+    'patterns. Also call when a user asks to change a technology choice, reverse a past approach, ' +
+    'or asks "why did we do X". Returns decisions scoped to current branch by default; pass ' +
+    'branch: "all" for project-wide history. Pro-gated: free users see counts only.',
     {
       limit: z.number().min(1).max(50).default(10).describe('Number of recent decisions to return (1-50, default 10)'),
       branch: z.string().optional().describe('Filter to a specific branch name, or "all" to show all branches. Auto-detected from worktree context by default.'),
