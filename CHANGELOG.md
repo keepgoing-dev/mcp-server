@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.3
+
+- Add OpenCode plugin support for session.deleted events to clear ghost sessions
+
 ## 0.14.2
 
 - Improve `get_decisions` tool description with explicit trigger guidance so AI tools call it at the right moments
