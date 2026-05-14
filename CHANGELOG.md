@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.0
+
+- Remove `activate_license` and `deactivate_license` tools; all capabilities are now available without a license
+- Remove license gate checks from `get_decisions` and `get_current_task` tools
+- Simplify internal feature capability helpers in shared package
+
 ## 0.14.3
 
 - Add OpenCode plugin support for session.deleted events to clear ghost sessions

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { KeepGoingReader } from '../storage.js';
-import { formatRelativeTime, getLicenseForFeatureWithRevalidation } from '@keepgoingdev/shared';
+import { formatRelativeTime } from '@keepgoingdev/shared';
 
 export function registerGetDecisions(server: McpServer, reader: KeepGoingReader) {
   server.tool(
@@ -11,39 +11,18 @@ export function registerGetDecisions(server: McpServer, reader: KeepGoingReader)
     'database schemas, API contracts, infrastructure config, migrations, or core architectural ' +
     'patterns. Also call when a user asks to change a technology choice, reverse a past approach, ' +
     'or asks "why did we do X". Returns decisions scoped to current branch by default; pass ' +
-    'branch: "all" for project-wide history. Pro-gated: free users see counts only.',
+    'branch: "all" for project-wide history.',
     {
       limit: z.number().min(1).max(50).default(10).describe('Number of recent decisions to return (1-50, default 10)'),
       branch: z.string().optional().describe('Filter to a specific branch name, or "all" to show all branches. Auto-detected from worktree context by default.'),
     },
-    async ({ limit, branch }) => {
+    ({ limit, branch }) => {
       if (!reader.exists()) {
         return {
           content: [
             {
               type: 'text' as const,
               text: 'No KeepGoing data found.',
-            },
-          ],
-        };
-      }
-
-      if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !(await getLicenseForFeatureWithRevalidation('decisions'))) {
-        const allDecisions = reader.getDecisions();
-        const count = allDecisions.length;
-        if (count > 0) {
-          return {
-            content: [{
-              type: 'text' as const,
-              text: `${count} decision${count === 1 ? '' : 's'} detected. Upgrade to Pro to view.\nVisit https://keepgoing.dev/add-ons to purchase.`,
-            }],
-          };
-        }
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: 'Decision Detection requires a Pro license. Use the activate_license tool, run `keepgoing activate <key>` in your terminal, or visit https://keepgoing.dev/add-ons to purchase.',
             },
           ],
         };

@@ -6,7 +6,6 @@ import {
   getFilesChangedWithStatus,
   getFileInsertionsInCommit,
   tryDetectDecision,
-  getLicenseForFeatureWithRevalidation,
 } from '@keepgoingdev/shared';
 import { KeepGoingReader } from '../storage.js';
 import { resolveWsPath } from './util.js';
@@ -17,14 +16,7 @@ import { resolveWsPath } from './util.js';
  * them to `.keepgoing/decisions.json`.
  */
 export async function handleDetectDecisions(): Promise<void> {
-  const wsPath = resolveWsPath();
-
-  // Respect Pro gate
-  if (!(process.env.KEEPGOING_PRO_BYPASS === '1' || (await getLicenseForFeatureWithRevalidation('decisions')))) {
-    process.exit(0);
-  }
-
-  // Only run if .keepgoing/ exists (auto-init is handled by write-triggers
+  const wsPath = resolveWsPath();  // Only run if .keepgoing/ exists (auto-init is handled by write-triggers
   // like save_checkpoint, not by read-only detection)
   const reader = new KeepGoingReader(wsPath);
   if (!reader.exists()) {

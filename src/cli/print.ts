@@ -1,6 +1,5 @@
 import {
   formatRelativeTime,
-  getLicenseForFeatureWithRevalidation,
   readKnownProjects,
   getColdProjects,
   filterNudgeable,
@@ -130,10 +129,6 @@ export async function handlePrintMomentum(): Promise<void> {
 }
 
 export async function handlePrintCurrent(): Promise<void> {
-  if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !(await getLicenseForFeatureWithRevalidation('session-awareness'))) {
-    process.exit(0);
-  }
-
   const wsPath = resolveWsPath();
   const reader = new KeepGoingReader(wsPath);
   const tasks = reader.getCurrentTasks();

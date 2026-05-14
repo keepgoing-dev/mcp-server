@@ -10,7 +10,6 @@ import {
   getFilesChangedWithStatus,
   getFileInsertionsInCommit,
   tryDetectDecision,
-  getLicenseForFeatureWithRevalidation,
   generateSessionId,
   buildSessionEvents,
   buildSmartSummary,
@@ -135,29 +134,26 @@ export async function handleSaveCheckpoint(): Promise<void> {
     updatedAt: checkpoint.timestamp,
   });
 
-  // Decision detection (Pro feature, requires valid Decision Detection license)
-  // Loop all commits between checkpoints so none are missed
-  if (process.env.KEEPGOING_PRO_BYPASS === '1' || (await getLicenseForFeatureWithRevalidation('decisions'))) {
-    for (let i = 0; i < commitHashes.length; i++) {
-      const hash = commitHashes[i];
-      const message = commitMessages[i];
-      if (!hash || !message) continue;
-      const files = getFilesChangedInCommit(wsPath, hash);
-      const filesWithStatus = getFilesChangedWithStatus(wsPath, hash);
-      const fileStats = getFileInsertionsInCommit(wsPath, hash);
-      const detected = tryDetectDecision({
-        workspacePath: wsPath,
-        checkpointId: checkpoint.id,
-        gitBranch,
-        commitHash: hash,
-        commitMessage: message,
-        filesChanged: files,
-        filesWithStatus,
-        fileStats,
-      });
-      if (detected) {
-        console.log(`[KeepGoing] Decision detected: ${detected.category} (${(detected.confidence * 100).toFixed(0)}% confidence)`);
-      }
+  // Decision detection - loop all commits between checkpoints so none are missed
+  for (let i = 0; i < commitHashes.length; i++) {
+    const hash = commitHashes[i];
+    const message = commitMessages[i];
+    if (!hash || !message) continue;
+    const files = getFilesChangedInCommit(wsPath, hash);
+    const filesWithStatus = getFilesChangedWithStatus(wsPath, hash);
+    const fileStats = getFileInsertionsInCommit(wsPath, hash);
+    const detected = tryDetectDecision({
+      workspacePath: wsPath,
+      checkpointId: checkpoint.id,
+      gitBranch,
+      commitHash: hash,
+      commitMessage: message,
+      filesChanged: files,
+      filesWithStatus,
+      fileStats,
+    });
+    if (detected) {
+      console.log(`[KeepGoing] Decision detected: ${detected.category} (${(detected.confidence * 100).toFixed(0)}% confidence)`);
     }
   }
 

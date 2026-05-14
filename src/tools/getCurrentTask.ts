@@ -1,30 +1,19 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { KeepGoingReader } from '../storage.js';
-import { formatRelativeTime, getLicenseForFeatureWithRevalidation } from '@keepgoingdev/shared';
+import { formatRelativeTime } from '@keepgoingdev/shared';
 
 export function registerGetCurrentTask(server: McpServer, reader: KeepGoingReader) {
   server.tool(
     'get_current_task',
     "Get a bird's eye view of all active Claude sessions. See what each session is working on, which branch it is on, and when it last did something. Useful when running multiple parallel sessions across worktrees.",
     {},
-    async () => {
+    () => {
       if (!reader.exists()) {
         return {
           content: [
             {
               type: 'text' as const,
               text: 'No KeepGoing data found.',
-            },
-          ],
-        };
-      }
-
-      if (process.env.KEEPGOING_PRO_BYPASS !== '1' && !(await getLicenseForFeatureWithRevalidation('session-awareness'))) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: 'Session Awareness requires a license. Use the activate_license tool, run `keepgoing activate <key>` in your terminal, or visit https://keepgoing.dev/add-ons to purchase.',
             },
           ],
         };

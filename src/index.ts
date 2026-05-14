@@ -15,8 +15,6 @@ import { registerSaveCheckpoint } from './tools/saveCheckpoint.js';
 import { registerGetDecisions } from './tools/getDecisions.js';
 import { registerGetCurrentTask } from './tools/getCurrentTask.js';
 import { registerSetupProject } from './tools/setupProject.js';
-import { registerActivateLicense } from './tools/activateLicense.js';
-import { registerDeactivateLicense } from './tools/deactivateLicense.js';
 import { registerContinueOn } from './tools/continueOn.js';
 import { registerGetContextSnapshot } from './tools/getContextSnapshot.js';
 import { registerGetWhatsHot } from './tools/getWhatsHot.js';
@@ -117,8 +115,6 @@ if (flag) {
   registerGetContextSnapshot(server, reader, workspacePath);
   registerGetWhatsHot(server);
   registerSetupProject(server, workspacePath);
-  registerActivateLicense(server);
-  registerDeactivateLicense(server);
 
   // Register prompts
   registerResumePrompt(server);

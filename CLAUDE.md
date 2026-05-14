@@ -81,6 +81,6 @@ Re-exports `KeepGoingReader` and `BranchScope` from `@keepgoingdev/shared`. The 
 - `@modelcontextprotocol/sdk`, `zod`, and `sql.js` are kept external
 - Output is ESM only, targeting Node 20
 
-### Feature Gating
+### Feature Flags
 
-Pro tools (`get_decisions`, `get_current_task`) check `licenseService.isFeatureActive()` from shared. Use `KEEPGOING_PRO_BYPASS=1` to bypass during development.
+`get_decisions` and `get_current_task` tools check `licenseService.isFeatureActive()` from shared. Use `KEEPGOING_PRO_BYPASS=1` to enable all capabilities during development.
